@@ -1,2 +1,0 @@
-# PSP-Sats-PIC
-PIC

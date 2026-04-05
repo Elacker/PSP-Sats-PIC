@@ -32,6 +32,11 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
+#define I_SET (1 << 4)
+#define I_RST (1 << 20)
+#define Q_SET (1 << 5)
+#define Q_RST (1 << 21)
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/

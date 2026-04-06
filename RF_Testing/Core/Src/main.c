@@ -53,6 +53,14 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
+//Using GPIOA Pin 4 and 5 output to represent 00, 01, 10, 11 (Pin4Pin5)
+const uint32_t qpsk_lut[4] = {
+		I_RST | Q_RST, //00
+		I_RST | Q_SET, //01
+		I_SET | Q_RST, //10
+		I_SET | Q_SET //11
+};
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/

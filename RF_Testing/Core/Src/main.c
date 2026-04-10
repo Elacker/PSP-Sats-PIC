@@ -129,10 +129,11 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
-	qpsk_data_transmit(radio_data, 3, qpsk_dma_buffer);
+    qpsk_data_transmit(radio_data, 3, qpsk_dma_buffer);
 
-	HAL_Delay(1000);
+	  HAL_Delay(1000);
+    /* USER CODE END WHILE */
+	
 
     /* USER CODE BEGIN 3 */
   }

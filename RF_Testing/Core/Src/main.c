@@ -37,6 +37,9 @@
 #define Q_SET (1 << 5)
 #define Q_RST (1 << 21)
 
+#define MAX_PACKET_SIZE 100
+
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -60,6 +63,12 @@ const uint32_t qpsk_lut[4] = {
 		I_SET | Q_RST, //10
 		I_SET | Q_SET //11
 };
+
+//storing the converted bsrr data
+uint32_t qpsk_dma_buffer[MAX_PACKET_SIZE];
+//Some random data to simulate data communication
+uint8_t radio_data[] = {0xAA, 0xDE, 0x23};
+
 
 /* USER CODE END PV */
 
@@ -312,7 +321,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
@@ -321,6 +330,33 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void pack_qpsk_buffer(uint8_t *data_in, uint16_t data_len, uint32_t* qpsk_dma_buffer) {
+    for (int i = 0; i < data_len; i++) {
+        // Split 1 byte into four 2-bit symbols and map to desired BSRR format
+        qpsk_dma_buffer[i*4 + 0] = qpsk_lut[(data_in[i] >> 6) & 0x03]; // Bits 7-6
+        qpsk_dma_buffer[i*4 + 1] = qpsk_lut[(data_in[i] >> 4) & 0x03]; // Bits 5-4
+        qpsk_dma_buffer[i*4 + 2] = qpsk_lut[(data_in[i] >> 2) & 0x03]; // Bits 3-2
+        qpsk_dma_buffer[i*4 + 3] = qpsk_lut[(data_in[i] >> 0) & 0x03]; // Bits 1-0
+    }
+}
+
+void qpsk_data_transmit(uint8_t* data, uint16_t data_len, uint32_t* dma_buffer){
+	//Check status
+	if(HAL_DMA_GetState(&hdma_tim3_ch4_up) != HAL_DMA_STATE_READY) {
+        return; // Or handle error
+    }
+
+
+	//Prepare data
+	uint16_t num_symbols = len * 4;
+	pack_qpsk_buffer(data, data_len, dma_buffer);
+
+	__HAL_DMA_CLEAR_FLAG(&hdma_tim3_ch4_up, DMA_FLAG_TC3 | DMA_FLAG_TE3);
+	HAL_DMA_Start(&hdma_tim3_ch4_up, (uint32_t)qpsk_dma_buffer, (uint32_t)&GPIOA->BSRR, num_symbols);
+	__HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_UPDATE);
+	HAL_TIM_Base_Start(&htim3);
+}
 
 /* USER CODE END 4 */
 

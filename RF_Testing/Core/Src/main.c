@@ -130,6 +130,9 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+	qpsk_data_transmit(radio_data, 3, qpsk_dma_buffer);
+
+	HAL_Delay(1000);
 
     /* USER CODE BEGIN 3 */
   }
@@ -331,6 +334,19 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+void HAL_DMA_XferCpltCallback(DMA_HandleTypeDef *hdma) {
+    if (hdma == &hdma_tim3_ch4_up) {
+        //Stop the timer 
+        HAL_TIM_Base_Stop(&htim3); 
+
+        //Disable DMA request connection
+        __HAL_TIM_DISABLE_DMA(&htim3, TIM_DMA_UPDATE);
+        
+        GPIOA->BSRR = (1 << 20) | (1 << 21); 
+    }
+}
+
+
 void pack_qpsk_buffer(uint8_t *data_in, uint16_t data_len, uint32_t* qpsk_dma_buffer) {
     for (int i = 0; i < data_len; i++) {
         // Split 1 byte into four 2-bit symbols and map to desired BSRR format
@@ -349,14 +365,15 @@ void qpsk_data_transmit(uint8_t* data, uint16_t data_len, uint32_t* dma_buffer){
 
 
 	//Prepare data
-	uint16_t num_symbols = len * 4;
+	uint16_t num_symbols = data_len * 4;
 	pack_qpsk_buffer(data, data_len, dma_buffer);
 
 	__HAL_DMA_CLEAR_FLAG(&hdma_tim3_ch4_up, DMA_FLAG_TC3 | DMA_FLAG_TE3);
-	HAL_DMA_Start(&hdma_tim3_ch4_up, (uint32_t)qpsk_dma_buffer, (uint32_t)&GPIOA->BSRR, num_symbols);
+	HAL_DMA_Start(&hdma_tim3_ch4_up, (uint32_t)dma_buffer, (uint32_t)&GPIOA->BSRR, num_symbols);
 	__HAL_TIM_ENABLE_DMA(&htim3, TIM_DMA_UPDATE);
 	HAL_TIM_Base_Start(&htim3);
 }
+
 
 /* USER CODE END 4 */
 
